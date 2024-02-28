@@ -1,16 +1,14 @@
 import tkinter as TK
 import customtkinter as CTk
-from tkinter import ttk
 from tkcalendar import DateEntry
 import pyodbc
 from tkinter import messagebox
-import babel.numbers
 
 # List to store the column names
 column_names = []
 
 # List to store custom labels
-custom_labels = ["ID", "Fecha solicitud", "PT", "Nombre del producto", "Area que solicita", "Fraccion de la Formulacion a Homologar", "Nombre de la materia Prima", "Numero de proovedores consultados", "Entrega de informacion Tecnica", "Informacion tecnica cumple para recepcionar muestra", "Fecha de entrega muestra por parte de proveedores a desarrollo", "Fecha de respuesta desarrollo", "Materia Prima cumple para Homologacion", "Proveedor seleccionado para homologar", "Nombre de la materia Prima aprobada", "Crear Nuevo GR", "Observaciones"]
+custom_labels = ["ID", "Fecha solicitud", "PT", "Nombre del producto", "Area que solicita", "Fraccion de la Formulacion a Homologar", "Nombre de la materia Prima", "Numero de proovedores consultados", "Entrega de informacion Tecnica", "Informacion tecnica cumple para recepcionar muestra", "Fecha de entrega muestra por parte de proveedores a desarrollo", "Fecha de respuesta desarrollo", "Materia Prima cumple para Homologacion", "Proveedor seleccionado para homologar", "Nombre de la materia Prima aprobada", "Crear Nuevo GR", "Observaciones","Estado"]
 select_date_buttons = []
 def fetch_data():
     try:
@@ -66,7 +64,7 @@ def fetch_data():
                     data_entries.append(combobox)
                 elif custom_label == 'Proveedor seleccionado para homologar':
                     # Use Combobox for specific entry fields
-                    proveedor_values = ["Bellchem","Protecnica","Merquimia","Rocsa","Quimifast","LyF","Presquim SAS","Croda","Disan","Mathiesen","Quimicos Integrales","Cromaroma","Chemyunion","IMCD","Sumilab","Sumiquim","Quimica Lider","Novacolor","Conquimica","Colorquimica","Quimica Express","PROES","Ferhmann SA","Golden","Quimicos Adhara","Symrise-Quimicos","Nativus","Mcassab","Pochteca","Ricardo Molina","Aromatheka","ECOCHEM","Dunamis","Colquimicos","Stepan","Factores y Mercadeo","Brenntag","Urigo SAS","Handler","Perysa","Sensoria","Fullarome","fragansa","Disaromas","La Tour Fragancias","Polaroma","Fiproquim","Biotechnis","Aroc","Quimicos del Cauca","Retema","Terracota Quimicos","Polaroma","Escol ( Essential Colombia)","Inversiones Brakca","ANBUCO SAS","ImporQuim Group","Ingredion","Quimerco","Seppic Colombia S.A.S."]
+                    proveedor_values = ["Otro","Bellchem","Protecnica","Merquimia","Rocsa","Quimifast","LyF","Presquim SAS","Croda","Disan","Mathiesen","Quimicos Integrales","Cromaroma","Chemyunion","IMCD","Sumilab","Sumiquim","Quimica Lider","Novacolor","Conquimica","Colorquimica","Quimica Express","PROES","Ferhmann SA","Golden","Quimicos Adhara","Symrise-Quimicos","Nativus","Mcassab","Pochteca","Ricardo Molina","Aromatheka","ECOCHEM","Dunamis","Colquimicos","Stepan","Factores y Mercadeo","Brenntag","Urigo SAS","Handler","Perysa","Sensoria","Fullarome","fragansa","Disaromas","La Tour Fragancias","Polaroma","Fiproquim","Biotechnis","Aroc","Quimicos del Cauca","Retema","Terracota Quimicos","Polaroma","Escol ( Essential Colombia)","Inversiones Brakca","ANBUCO SAS","ImporQuim Group","Ingredion","Quimerco","Seppic Colombia S.A.S."]
                     combobox = CTk.CTkComboBox(window, values=proveedor_values, state='readonly')
                     combobox.set(result[i]) if result[i] is not None else ""
                     combobox.grid(row=i, column=1, padx=5, pady=5, sticky=CTk.W)
@@ -74,6 +72,13 @@ def fetch_data():
                 elif custom_label in ['Entrega de informacion Tecnica', 'Informacion tecnica cumple para recepcionar muestra', 'Materia Prima cumple para Homologacion', 'Crear Nuevo GR']:
                     # Use Combobox for specific entry fields
                     common_values = ["SI", "NO"]
+                    combobox = CTk.CTkComboBox(window, values=common_values, state='readonly')
+                    combobox.set(result[i]) if result[i] is not None else ""
+                    combobox.grid(row=i, column=1, padx=5, pady=5, sticky=CTk.W)
+                    data_entries.append(combobox)
+                elif custom_label in ['Estado']:
+                    # Use Combobox for specific entry fields
+                    common_values = ["Investigacion Proveedores", "En espera de Materia prima","En formulacion teorica","Estabilidad Laboratorio"]
                     combobox = CTk.CTkComboBox(window, values=common_values, state='readonly')
                     combobox.set(result[i]) if result[i] is not None else ""
                     combobox.grid(row=i, column=1, padx=5, pady=5, sticky=CTk.W)
