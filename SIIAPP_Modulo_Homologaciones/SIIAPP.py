@@ -8,7 +8,7 @@ from tkinter import messagebox
 column_names = []
 
 # List to store custom labels
-custom_labels = ["ID", "Fecha solicitud", "PT", "Nombre del producto", "Area que solicita", "Fraccion de la Formulacion a Homologar", "Nombre de la materia Prima", "Numero de proovedores consultados", "Entrega de informacion Tecnica", "Informacion tecnica cumple para recepcionar muestra", "Fecha de entrega muestra por parte de proveedores a desarrollo", "Fecha de respuesta desarrollo", "Materia Prima cumple para Homologacion", "Proveedor seleccionado para homologar", "Nombre de la materia Prima aprobada", "Crear Nuevo GR", "Observaciones","Estado"]
+custom_labels = ["ID", "Fecha solicitud", "PT", "Nombre del producto", "Area que solicita", "Fraccion de la Formulacion a Homologar", "Nombre de la materia Prima", "Numero de proovedores consultados", "Entrega de informacion Tecnica", "Informacion tecnica cumple para recepcionar muestra", "Fecha de entrega muestra por parte de proveedores a desarrollo", "Fecha de respuesta desarrollo", "Materia Prima cumple para Homologacion", "Proveedor seleccionado para homologar", "Nombre de la materia Prima aprobada", "Crear Nueva Version de PT", "Observaciones","Estado"]
 select_date_buttons = []
 def fetch_data():
     try:
