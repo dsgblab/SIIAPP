@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-import customtkinter as ctk 
+import customtkinter as ctk
 import pyodbc
 
 class MyFrame(ctk.CTkScrollableFrame):
@@ -8,9 +8,9 @@ class MyFrame(ctk.CTkScrollableFrame):
         super().__init__(master, **kwargs)
 
         # add widgets onto the frame...
-        self.label = ctk.CTkLabel(self, text="ID: ")
+        self.label = ctk.CTkLabel(self, text="OP:")
         self.label.grid(row=0, column=0, padx=20)
-        self.entry = ctk.CTkEntry(self, placeholder_text="Enter ID")
+        self.entry = ctk.CTkEntry(self, placeholder_text="Enter OP")
         self.entry.grid(row=0, column=1, padx=20)
 
         # Button to fetch data
@@ -23,47 +23,43 @@ class MyFrame(ctk.CTkScrollableFrame):
 
         # Connect to the SQL Server
         connection_string = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=ssf_genericos;UID=sa;PWD=Genericos0224'
-        connection = pyodbc.connect(connection_string)
 
-        # Execute a SQL query to fetch data based on the entered ID
-        query = f"""
-    SELECT V_fp_pedidos.Pedido
-         , V_fp_pedidos.[Codigo Producto]
-         , in_items.itedesclarg As [NomProducto]
-         , V_fp_pedidos.[Fecha Requerida]
-         , V_fp_pedidos.[Cantidad Pedida]
-         , V_fp_pedidos.[Estado Pedido]
-         , V_fp_pedidos.OP
-         , V_fp_pedidos.eobnombre AS [Estado OP]
-    FROM  V_fp_pedidos 
-         INNER JOIN in_items ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
-    WHERE (V_fp_pedidos.Compania = '01')
-         AND (V_fp_pedidos.eobnombre IN ('Por ejecutar', 'En ejecucion'))
-         AND (V_fp_pedidos.Pedido = '{entered_id}')"""
-        cursor = connection.cursor()
-        cursor.execute(query)
+        try:
+            with pyodbc.connect(connection_string) as connection:
+                # Execute a SQL query to fetch data based on the entered ID
+                query = """
+                SELECT V_fp_pedidos.Pedido, V_fp_pedidos.[Codigo Producto], in_items.itedesclarg AS NomProducto, V_fp_pedidos.[Fecha Requerida], V_fp_pedidos.[Cantidad Pedida], V_fp_pedidos.[Estado Pedido], V_fp_pedidos.OP, V_fp_pedidos.eobnombre AS [Estado OP], in_items.itecompania
+                FROM V_fp_pedidos
+                INNER JOIN in_items ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
+                WHERE (V_fp_pedidos.eobnombre IN ('Por ejecutar', 'En ejecucion')) AND (in_items.itecompania = '01')
+                AND (V_fp_pedidos.OP = ?)
+                """
 
-        # Fetch the data
-        data = cursor.fetchone()
+                cursor = connection.cursor()
+                cursor.execute(query, entered_id)
 
-        # Close the connection
-        connection.close()
+                # Fetch the data
+                data = cursor.fetchone()
+        except pyodbc.Error as e:
+            print(f"Error: {e}")
+            messagebox.showerror("Database Error", f"An error occurred while fetching data: {str(e)}")
+            return
 
         # Check if data is found
         if data:
             # Create labels and entries for each field in the fetched data
             for i, column_value in enumerate(data):
-                label_text = f"Column {i + 1}:"
+                label_text = f"column{i + 1}"
                 entry_text = str(column_value)
-                
+
                 label = ctk.CTkLabel(self, text=label_text)
                 label.grid(row=i + 2, column=0, padx=20)
 
-                entry = ctk.CTkEntry(self, placeholder_text=entry_text,width=300)
-                entry.insert(0, str(data[i]) if data[i] is not None else "")
+                entry = ctk.CTkLabel(self, text=entry_text, width=300)
                 entry.grid(row=i + 2, column=1, padx=20)
 
         else:
+            print(f"Error: {e}")
             messagebox.showinfo("No Data", "No data found for the entered ID.")
 
 class App(ctk.CTk):
