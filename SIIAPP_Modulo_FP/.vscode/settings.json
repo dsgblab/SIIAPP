@@ -1,3 +1,7 @@
 {
-    "CodeGPT.apiKey": "Google AI Studio"
+    "CodeGPT.apiKey": "OpenAI",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8",
+        "editor.formatOnSave": true
+      }
 }
