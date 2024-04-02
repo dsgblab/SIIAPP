@@ -39,7 +39,7 @@ class MyFrame(ctk.CTkFrame):
         self.sheet.headers(headers)
 
         # Configure column widths
-        column_widths = [100, 120, 200, 120, 120,
+        column_widths = [100, 120, 800, 120, 120,
                          120, 80, 120, 100, 100, 100, 80, 200]
         for i, width in enumerate(column_widths):
             self.sheet.column_width(column=i, width=width)
@@ -87,7 +87,7 @@ class MyFrame(ctk.CTkFrame):
         FROM V_fp_pedidos
         INNER JOIN in_items ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
         LEFT JOIN FP_PROGRES ON V_fp_pedidos.OP = FP_PROGRES.orpconsecutivo
-        WHERE (V_fp_pedidos.eobnombre IN ('Por ejecutar', 'En ejecucion'))
+        WHERE (V_fp_pedidos.eobnombre IN ('Por ejecutar', 'En ejecucion', 'En firme'))
         AND (in_items.itecompania = '01')
         """
         cursor.execute(query)
