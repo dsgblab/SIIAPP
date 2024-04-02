@@ -168,6 +168,7 @@ class MyFrame(ctk.CTkFrame):
             selected_row = next(iter(selected_rows))
             row_data = self.sheet.get_row_data(selected_row)
             op_value = row_data[6]  # Assuming 'OP' is at index 6
+            it_comp = row_data[8]  # Assuming
 
             # Create a new window for entering child record data
             child_window = ctk.CTkToplevel(self)
@@ -216,10 +217,10 @@ class MyFrame(ctk.CTkFrame):
                 cursor = conn.cursor()
 
                 insert_query = """
-                INSERT INTO FP_PROGRES (orpconsecutivo, CANTIDAD_FP, FASE_PODUCC, PLANTA, COMENTARIES)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO FP_PROGRES (orpconsecutivo, orpcompania, CANTIDAD_FP, FASE_PODUCC, PLANTA, COMENTARIES)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """
-                cursor.execute(insert_query, (op_value, cantidad_fp,
+                cursor.execute(insert_query, (op_value, it_comp, cantidad_fp,
                                fase_producc, planta, comentarios))
                 conn.commit()
 
