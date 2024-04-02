@@ -19,22 +19,37 @@ class MyFrame(ctk.CTkFrame):
         self.sheet = Sheet(self)
         self.sheet.pack(fill="both", expand=True)
 
+        # fases_produccion
+        self.fases = [
+            "",
+            "Dispenciacion",
+            "Pesaje",
+            "Fabricacion",
+            "Microbiologia",
+            "Envasado",
+            "Acondicionamiento",
+            "Embalaje",
+            "Despacho"
+        ]
+        # plantas de produccion
+        self.plantas = ["", "01", "02"]
+
         # Configure column headers
         headers = [
             "Pedido",
             "Codigo Producto",
-            "NomProducto",
+            "Nombre del Producto",
             "Fecha Requerida",
             "Cantidad Pedida",
             "Estado Pedido",
             "OP",
             "Estado OP",
-            "itecompania",
+            "Item Compañia",
             "FP_ID",
-            "CANTIDAD_FP",
-            "FASE_PODUCC",
-            "PLANTA",
-            "COMENTARIES"
+            "Cantidad en fase de produccion",
+            "Fase de Produccion",
+            "Planta",
+            "Observaciones/Comentarios"
         ]
         self.sheet.headers(headers)
 
@@ -53,7 +68,7 @@ class MyFrame(ctk.CTkFrame):
 
         # Create filter entry
         self.filter_entry = ctk.CTkEntry(
-            self.scrollable_frame, placeholder_text="Filter by OP")
+            self.scrollable_frame, placeholder_text="Filtrar por OP")
         self.filter_entry.pack(padx=10, pady=10, fill="x")
         self.filter_entry.bind("<Return>", self.filter_data)
 
@@ -62,11 +77,11 @@ class MyFrame(ctk.CTkFrame):
         self.button_frame.pack(padx=10, pady=10, fill="x")
 
         self.create_child_button = ctk.CTkButton(
-            self.button_frame, text="Create Child Record", command=self.create_child_record)
+            self.button_frame, text="Crear Registro", command=self.create_child_record)
         self.create_child_button.pack(side="left", padx=5)
 
         self.edit_child_button = ctk.CTkButton(
-            self.button_frame, text="Edit Child Record", command=self.edit_child_record)
+            self.button_frame, text="Editar Registro", command=self.edit_child_record)
         self.edit_child_button.pack(side="left", padx=5)
 
         # Load data from the database
@@ -80,15 +95,31 @@ class MyFrame(ctk.CTkFrame):
 
         # Fetch data from the database
         query = query = """
-        SELECT V_fp_pedidos.Pedido, V_fp_pedidos.[Codigo Producto], in_items.itedesclarg AS NomProducto,
-            V_fp_pedidos.[Fecha Requerida], V_fp_pedidos.[Cantidad Pedida], V_fp_pedidos.[Estado Pedido],
-            V_fp_pedidos.OP, V_fp_pedidos.eobnombre AS [Estado OP], in_items.itecompania,
-            FP_PROGRES.[FP_ID], FP_PROGRES.[CANTIDAD_FP], FP_PROGRES.[FASE_PODUCC], FP_PROGRES.[PLANTA], FP_PROGRES.[COMENTARIES]
-        FROM V_fp_pedidos
-        INNER JOIN in_items ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
-        LEFT JOIN FP_PROGRES ON V_fp_pedidos.OP = FP_PROGRES.orpconsecutivo
-        WHERE (V_fp_pedidos.eobnombre IN ('Por ejecutar', 'En ejecucion', 'En firme'))
-        AND (in_items.itecompania = '01')
+                SELECT 
+            V_fp_pedidos.Pedido, 
+            V_fp_pedidos.[Codigo Producto], 
+            in_items.itedesclarg AS NomProducto,
+            V_fp_pedidos.[Fecha Requerida], 
+            V_fp_pedidos.[Cantidad Pedida], 
+            V_fp_pedidos.[Estado Pedido],
+            V_fp_pedidos.OP, 
+            V_fp_pedidos.eobnombre AS [Estado OP], 
+            in_items.itecompania,
+            FP_PROGRES.FP_ID, 
+            FP_PROGRES.CANTIDAD_FP, 
+            FP_PROGRES.FASE_PODUCC, 
+            FP_PROGRES.PLANTA, 
+            FP_PROGRES.COMENTARIES
+        FROM 
+            [ssf_genericos].[dbo].[V_fp_pedidos]
+        INNER JOIN 
+            [ssf_genericos].[dbo].[in_items] ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
+        LEFT JOIN 
+            [SIIAPP].[dbo].[FP_PROGRES] AS FP_PROGRES 
+            ON V_fp_pedidos.OP = FP_PROGRES.orpconsecutivo COLLATE Latin1_General_CI_AS
+        WHERE 
+            (V_fp_pedidos.eobnombre IN ('Por ejecutar', 'En ejecucion', 'En firme'))
+            AND (in_items.itecompania = '01');
         """
         cursor.execute(query)
         data = cursor.fetchall()
@@ -140,30 +171,47 @@ class MyFrame(ctk.CTkFrame):
 
             # Create a new window for entering child record data
             child_window = ctk.CTkToplevel(self)
-            child_window.title("Create Child Record")
+            child_window.title("Crear Registro de Fase de Produccion")
 
             # Add input fields for child record data
             cantidad_fp_entry = ctk.CTkEntry(
-                child_window, placeholder_text="CANTIDAD_FP")
-            cantidad_fp_entry.pack(pady=5)
-            fase_producc_entry = ctk.CTkEntry(
-                child_window, placeholder_text="FASE_PODUCC")
-            fase_producc_entry.pack(pady=5)
-            planta_entry = ctk.CTkEntry(
-                child_window, placeholder_text="PLANTA")
-            planta_entry.pack(pady=5)
-            comentarios_entry = ctk.CTkEntry(
-                child_window, placeholder_text="COMENTARIES")
-            comentarios_entry.pack(pady=5)
+                child_window, placeholder_text="Cantidad en fase de produccion")
+            fase_producc_entry = ctk.CTkComboBox(
+                child_window, values=self.fases, state="readonly")
+            planta_entry = ctk.CTkComboBox(
+                child_window,  values=self.plantas, state="readonly")
+            comentarios_entry = ctk.CTkTextbox(
+                child_window, height=50, width=200)
+            comentarios_entry.configure(
+                border_color='blue', border_width=0.5)
+            # Grid view
+            cantidad_fp_label = ctk.CTkLabel(
+                child_window, text="Cantidad en fase de produccion:")
+            cantidad_fp_label.grid(row=0, column=0, padx=5, pady=5)
+            cantidad_fp_entry.grid(row=0, column=1, padx=5, pady=5)
+
+            fase_producc_label = ctk.CTkLabel(
+                child_window, text="Fase de Produccion:")
+            fase_producc_label.grid(row=1, column=0, padx=5, pady=5)
+            fase_producc_entry.grid(row=1, column=1, padx=5, pady=5)
+
+            planta_label = ctk.CTkLabel(child_window, text="Planta:")
+            planta_label.grid(row=2, column=0, padx=5, pady=5)
+            planta_entry.grid(row=2, column=1, padx=5, pady=5)
+
+            comentarios_label = ctk.CTkLabel(
+                child_window, text="Observasiones/Comentarios:")
+            comentarios_label.grid(row=3, column=0, padx=5, pady=5)
+            comentarios_entry.grid(row=3, column=1, padx=5, pady=5)
 
             def save_child_record():
                 cantidad_fp = cantidad_fp_entry.get()
                 fase_producc = fase_producc_entry.get()
                 planta = planta_entry.get()
-                comentarios = comentarios_entry.get()
+                comentarios = comentarios_entry.get("0.0", "end")
 
                 # Insert the child record into the database
-                conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=ssf_genericos;UID=sa;PWD=Genericos0224*'
+                conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
                 conn = pyodbc.connect(conn_str)
                 cursor = conn.cursor()
 
@@ -182,11 +230,11 @@ class MyFrame(ctk.CTkFrame):
                 self.reload_data()
 
             save_button = ctk.CTkButton(
-                child_window, text="Save", command=save_child_record)
-            save_button.pack(pady=10)
+                child_window, text="Guardar", command=save_child_record)
+            save_button.grid(row=4, column=0, columnspan=2, pady=10)
         else:
             messagebox.showinfo(
-                "No Selection", "Please select a row to create a child record.")
+                "Sin seleccion", "Porfavor eliga una fila para Crear un registro")
 
     def edit_child_record(self):
         selected_rows = self.sheet.get_selected_rows()
@@ -199,36 +247,55 @@ class MyFrame(ctk.CTkFrame):
 
             # Create a new window for editing child record data
             edit_window = ctk.CTkToplevel(self)
-            edit_window.title("Edit Child Record")
+            edit_window.title("Editar registro de fase de produccion")
 
             # Add input fields for child record data
             cantidad_fp_entry = ctk.CTkEntry(
-                edit_window, placeholder_text="CANTIDAD_FP")
+                edit_window, placeholder_text="Cantidad en fase de produccion")
             # Pre-fill with existing data
             cantidad_fp_entry.insert(0, row_data[10])
-            cantidad_fp_entry.pack(pady=5)
-            fase_producc_entry = ctk.CTkEntry(
-                edit_window, placeholder_text="FASE_PODUCC")
+            fase_producc_entry = ctk.CTkComboBox(
+                edit_window, values=self.fases, state="readonly")
             # Pre-fill with existing data
-            fase_producc_entry.insert(0, row_data[11])
-            fase_producc_entry.pack(pady=5)
-            planta_entry = ctk.CTkEntry(edit_window, placeholder_text="PLANTA")
-            planta_entry.insert(0, row_data[12])  # Pre-fill with existing data
-            planta_entry.pack(pady=5)
-            comentarios_entry = ctk.CTkEntry(
-                edit_window, placeholder_text="COMENTARIES")
+            fase_producc_entry.set(row_data[11])
+            planta_entry = ctk.CTkComboBox(
+                edit_window,  values=self.plantas, state="readonly")
+            planta_entry.set(row_data[12])
             # Pre-fill with existing data
-            comentarios_entry.insert(0, row_data[13])
-            comentarios_entry.pack(pady=5)
+            comentarios_entry = ctk.CTkTextbox(
+                edit_window, height=50, width=200)
+            # Pre-fill with existing data
+            comentarios_entry.insert("0.0", row_data[13])
+            comentarios_entry.configure(
+                border_color='blue', border_width=0.5)
+            # Grid view
+            cantidad_fp_label = ctk.CTkLabel(
+                edit_window, text="Cantidad en fase de produccion:")
+            cantidad_fp_label.grid(row=0, column=0, padx=5, pady=5)
+            cantidad_fp_entry.grid(row=0, column=1, padx=5, pady=5)
+
+            fase_producc_label = ctk.CTkLabel(
+                edit_window, text="Fase de Produccion:")
+            fase_producc_label.grid(row=1, column=0, padx=5, pady=5)
+            fase_producc_entry.grid(row=1, column=1, padx=5, pady=5)
+
+            planta_label = ctk.CTkLabel(edit_window, text="Planta:")
+            planta_label.grid(row=2, column=0, padx=5, pady=5)
+            planta_entry.grid(row=2, column=1, padx=5, pady=5)
+
+            comentarios_label = ctk.CTkLabel(
+                edit_window, text="Observaciones/Comentarios:")
+            comentarios_label.grid(row=3, column=0, padx=5, pady=5)
+            comentarios_entry.grid(row=3, column=1, padx=5, pady=5)
 
             def save_edited_child_record():
                 cantidad_fp = cantidad_fp_entry.get()
                 fase_producc = fase_producc_entry.get()
                 planta = planta_entry.get()
-                comentarios = comentarios_entry.get()
+                comentarios = comentarios_entry.get("0.0", "end")
 
                 # Update the child record in the database
-                conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=ssf_genericos;UID=sa;PWD=Genericos0224*'
+                conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
                 conn = pyodbc.connect(conn_str)
                 cursor = conn.cursor()
 
@@ -248,11 +315,11 @@ class MyFrame(ctk.CTkFrame):
                 self.reload_data()
 
             save_button = ctk.CTkButton(
-                edit_window, text="Save", command=save_edited_child_record)
-            save_button.pack(pady=10)
+                edit_window, text="Guardar Cambios", command=save_edited_child_record)
+            save_button.grid(row=4, column=0, columnspan=2, pady=10)
         else:
             messagebox.showinfo(
-                "No Selection", "Please select a row to edit the child record.")
+                "Sin seleccion", "Porfavor eliga una fila para editar un registro")
 
     def reload_data(self):
         # Clear existing data
