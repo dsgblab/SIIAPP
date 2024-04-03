@@ -7,6 +7,7 @@ from tksheet import Sheet
 from datetime import datetime
 import logging
 
+
 # Configure logging
 logging.basicConfig(filename='app.log', level=logging.ERROR)
 
@@ -57,12 +58,6 @@ class MyFrame(ctk.CTkFrame):
         ]
         self.sheet.headers(headers)
 
-        # Configure column widths
-        column_widths = [100, 120, 800, 120, 120,
-                         120, 80, 120, 100, 100, 100, 80, 200]
-        for i, width in enumerate(column_widths):
-            self.sheet.column_width(column=i, width=width)
-
         # Enable row selection
         self.sheet.enable_bindings(("single_select", "row_select"))
 
@@ -88,6 +83,9 @@ class MyFrame(ctk.CTkFrame):
             self.button_frame, text="Editar Registro", command=self.edit_child_record)
         self.edit_child_button.pack(side="left", padx=5)
 
+        self.hot_reload_button = ctk.CTkButton(
+            self.button_frame, text="Refrescar", command=self.reload_data)
+        self.hot_reload_button.pack(side="left", padx=5)
         # Load data from the database
         self.load_data()
 
@@ -148,6 +146,12 @@ class MyFrame(ctk.CTkFrame):
 
             self.original_data = formatted_data
             self.sheet.set_sheet_data(formatted_data)
+            # Configure column widths
+            self.column_widths = [100, 120, 240, 120, 120,
+                                  120, 80, 100, 100, 50, 120, 100, 80, 200]
+
+            for i, width in enumerate(self.column_widths):
+                self.sheet.column_width(column=i, width=width)
 
             # Highlight FP_PROGRES columns
             for i in range(9, 14):
@@ -396,8 +400,8 @@ class MyFrame(ctk.CTkFrame):
                         cursor.close()
                     if conn:
                         conn.close()
-            edit_window.destroy()
-            self.reload_data()
+                edit_window.destroy()
+                self.reload_data()
 
             save_button = ctk.CTkButton(
                 edit_window, text="Guardar Cambios", command=save_edited_child_record)
@@ -425,7 +429,7 @@ def sanitize_input(value):
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("400x200")
+        self.geometry("800x400")
         self.grid_rowconfigure(0, weight=1)  # configure grid system
         self.grid_columnconfigure(0, weight=1)
 
@@ -434,5 +438,4 @@ class App(ctk.CTk):
 
 
 app = App()
-app.geometry("800x400")
 app.mainloop()
