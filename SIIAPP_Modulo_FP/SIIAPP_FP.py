@@ -5,6 +5,10 @@ import customtkinter as ctk
 import pyodbc
 from tksheet import Sheet
 from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(filename='app.log', level=logging.ERROR)
 
 
 class ScrollableFrame(ctk.CTkScrollableFrame):
@@ -88,69 +92,78 @@ class MyFrame(ctk.CTkFrame):
         self.load_data()
 
     def load_data(self):
-        # Connect to the database
-        conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=ssf_genericos;UID=sa;PWD=Genericos0224*'
-        conn = pyodbc.connect(conn_str)
-        cursor = conn.cursor()
+        try:
+            # Connect to the database
+            conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=ssf_genericos;UID=sa;PWD=Genericos0224*'
+            conn = pyodbc.connect(conn_str)
+            cursor = conn.cursor()
 
-        # Fetch data from the database
-        query = query = """
+            # Fetch data from the database using parameterized query
+            query = """
                 SELECT 
-            V_fp_pedidos.Pedido, 
-            V_fp_pedidos.[Codigo Producto], 
-            in_items.itedesclarg AS NomProducto,
-            V_fp_pedidos.[Fecha Requerida], 
-            V_fp_pedidos.[Cantidad Pedida], 
-            V_fp_pedidos.[Estado Pedido],
-            V_fp_pedidos.OP, 
-            V_fp_pedidos.eobnombre AS [Estado OP], 
-            in_items.itecompania,
-            FP_PROGRES.FP_ID, 
-            FP_PROGRES.CANTIDAD_FP, 
-            FP_PROGRES.FASE_PODUCC, 
-            FP_PROGRES.PLANTA, 
-            FP_PROGRES.COMENTARIES
-        FROM 
-            [ssf_genericos].[dbo].[V_fp_pedidos]
-        INNER JOIN 
-            [ssf_genericos].[dbo].[in_items] ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
-        LEFT JOIN 
-            [SIIAPP].[dbo].[FP_PROGRES] AS FP_PROGRES 
-            ON V_fp_pedidos.OP = FP_PROGRES.orpconsecutivo COLLATE Latin1_General_CI_AS
-        WHERE 
-            (V_fp_pedidos.eobnombre IN ('Por ejecutar', 'En ejecucion', 'En firme'))
-            AND (in_items.itecompania = '01');
-        """
-        cursor.execute(query)
-        data = cursor.fetchall()
+                    V_fp_pedidos.Pedido, 
+                    V_fp_pedidos.[Codigo Producto], 
+                    in_items.itedesclarg AS NomProducto,
+                    V_fp_pedidos.[Fecha Requerida], 
+                    V_fp_pedidos.[Cantidad Pedida], 
+                    V_fp_pedidos.[Estado Pedido],
+                    V_fp_pedidos.OP, 
+                    V_fp_pedidos.eobnombre AS [Estado OP], 
+                    in_items.itecompania,
+                    FP_PROGRES.FP_ID, 
+                    FP_PROGRES.CANTIDAD_FP, 
+                    FP_PROGRES.FASE_PODUCC, 
+                    FP_PROGRES.PLANTA, 
+                    FP_PROGRES.COMENTARIES
+                FROM 
+                    [ssf_genericos].[dbo].[V_fp_pedidos]
+                INNER JOIN 
+                    [ssf_genericos].[dbo].[in_items] ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
+                LEFT JOIN 
+                    [SIIAPP].[dbo].[FP_PROGRES] AS FP_PROGRES 
+                    ON V_fp_pedidos.OP = FP_PROGRES.orpconsecutivo COLLATE Latin1_General_CI_AS
+                WHERE 
+                    (V_fp_pedidos.eobnombre IN (?, ?, ?))
+                    AND (in_items.itecompania = ?);
+            """
+            params = ('Por ejecutar', 'En ejecucion', 'En firme', '01')
+            cursor.execute(query, params)
+            data = cursor.fetchall()
 
-        # Insert data into the Tksheet
-        formatted_data = []
-        for row in data:
-            parent_row = [
-                str(value) if value is not None else "" for value in row[:9]]
-            fp_progres_values = row[9:]
+            # Insert data into the Tksheet
+            formatted_data = []
+            for row in data:
+                parent_row = [
+                    str(value) if value is not None else "" for value in row[:9]]
+                fp_progres_values = row[9:]
 
-            if any(fp_progres_values):
-                parent_row.extend(
-                    str(value) if value is not None else "" for value in fp_progres_values)
-            else:
-                # Add empty cells for FP_PROGRES columns
-                parent_row.extend([""] * 5)
+                if any(fp_progres_values):
+                    parent_row.extend(
+                        str(value) if value is not None else "" for value in fp_progres_values)
+                else:
+                    # Add empty cells for FP_PROGRES columns
+                    parent_row.extend([""] * 5)
 
-            formatted_data.append(parent_row)
+                formatted_data.append(parent_row)
 
-        self.original_data = formatted_data
-        self.sheet.set_sheet_data(formatted_data)
+            self.original_data = formatted_data
+            self.sheet.set_sheet_data(formatted_data)
 
-        # Highlight FP_PROGRES columns
-        for i in range(9, 14):
-            self.sheet.highlight_columns(
-                columns=[i], bg="lightgray", fg="black")
+            # Highlight FP_PROGRES columns
+            for i in range(9, 14):
+                self.sheet.highlight_columns(
+                    columns=[i], bg="lightgray", fg="black")
 
-        # Close the database connection
-        cursor.close()
-        conn.close()
+        except pyodbc.Error as e:
+            logging.error(f"An error occurred while loading data: {str(e)}")
+            messagebox.showerror(
+                "Error", "An error occurred while loading data. Please check the logs for more information.")
+        finally:
+            # Close the database connection and cursor
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def filter_data(self, event):
         op_filter = self.filter_entry.get()
@@ -206,39 +219,57 @@ class MyFrame(ctk.CTkFrame):
             comentarios_entry.grid(row=3, column=1, padx=5, pady=5)
 
             def save_child_record():
-                cantidad_fp = cantidad_fp_entry.get()
-                fase_producc = fase_producc_entry.get()
-                planta = planta_entry.get()
-                comentarios = comentarios_entry.get("0.0", "end")
+                try:
+                    cantidad_fp = cantidad_fp_entry.get()
+                    fase_producc = fase_producc_entry.get()
+                    planta = planta_entry.get()
+                    comentarios = comentarios_entry.get("0.0", "end")
 
-                # Insert the child record into the database
-                conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
-                conn = pyodbc.connect(conn_str)
-                cursor = conn.cursor()
+                    # Validate and sanitize user input
+                    cantidad_fp = sanitize_input(cantidad_fp)
+                    fase_producc = sanitize_input(fase_producc)
+                    planta = sanitize_input(planta)
+                    comentarios = sanitize_input(comentarios)
 
-                insert_query = """
-                INSERT INTO FP_PROGRES (orpconsecutivo, orpcompania, CANTIDAD_FP, FASE_PODUCC, PLANTA, COMENTARIES)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """
-                cursor.execute(insert_query, (op_value, it_comp, cantidad_fp,
-                               fase_producc, planta, comentarios))
-                conn.commit()
+                    # Insert the child record into the database using parameterized query
+                    conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
+                    conn = pyodbc.connect(conn_str)
+                    cursor = conn.cursor()
 
-                # Get the last inserted FP_ID
-                cursor.execute("SELECT @@IDENTITY")
-                fp_id = cursor.fetchone()[0]
+                    insert_query = """
+                        INSERT INTO FP_PROGRES (orpconsecutivo, orpcompania, CANTIDAD_FP, FASE_PODUCC, PLANTA, COMENTARIES)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """
+                    params = (op_value, it_comp, cantidad_fp,
+                              fase_producc, planta, comentarios)
+                    cursor.execute(insert_query, params)
+                    conn.commit()
 
-                # Insert data into FP_TIMES table for the corresponding phase with current datetime
-                insert_times_query = f"""
-                INSERT INTO FP_TIMES (FP_ID, {fase_producc}_ST)
-                VALUES (?, ?)
-                """
-                current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                cursor.execute(insert_times_query, (fp_id, current_datetime))
-                conn.commit()
+                    # Get the last inserted FP_ID
+                    cursor.execute("SELECT @@IDENTITY")
+                    fp_id = cursor.fetchone()[0]
 
-                cursor.close()
-                conn.close()
+                    # Insert data into FP_TIMES table for the corresponding phase with current datetime
+                    insert_times_query = f"""
+                        INSERT INTO FP_TIMES (FP_ID, {fase_producc}_ST)
+                        VALUES (?, ?)
+                    """
+                    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    cursor.execute(insert_times_query,
+                                   (fp_id, current_datetime))
+                    conn.commit()
+
+                except pyodbc.Error as e:
+                    logging.error(
+                        f"An error occurred while saving child record: {str(e)}")
+                    messagebox.showerror(
+                        "Error", "An error occurred while saving the child record. Please check the logs for more information.")
+                finally:
+                    # Close the database connection and cursor
+                    if cursor:
+                        cursor.close()
+                    if conn:
+                        conn.close()
 
                 child_window.destroy()
                 self.reload_data()
@@ -303,55 +334,70 @@ class MyFrame(ctk.CTkFrame):
             comentarios_entry.grid(row=3, column=1, padx=5, pady=5)
 
             def save_edited_child_record():
-                cantidad_fp = cantidad_fp_entry.get()
-                fase_producc = fase_producc_entry.get()
-                planta = planta_entry.get()
-                comentarios = comentarios_entry.get("0.0", "end")
+                try:
+                    cantidad_fp = cantidad_fp_entry.get()
+                    fase_producc = fase_producc_entry.get()
+                    planta = planta_entry.get()
+                    comentarios = comentarios_entry.get("0.0", "end")
 
-                # Update the child record in the database
-                conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
-                conn = pyodbc.connect(conn_str)
-                cursor = conn.cursor()
+                    # Validate and sanitize user input
+                    cantidad_fp = sanitize_input(cantidad_fp)
+                    fase_producc = sanitize_input(fase_producc)
+                    planta = sanitize_input(planta)
+                    comentarios = sanitize_input(comentarios)
 
-                select_query = """
-                SELECT FASE_PODUCC
-                FROM FP_PROGRES
-                WHERE FP_ID = ?
-                """
-                cursor.execute(select_query, (fp_id,))
-                existing_data = cursor.fetchone()
-                if existing_data:
-                    prev_fase = existing_data[0]
-                else:
-                    prev_fase = None
+                    # Update the child record in the database using parameterized query
+                    conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
+                    conn = pyodbc.connect(conn_str)
+                    cursor = conn.cursor()
 
-                # Update the child record in the database
-                update_query = """
-                UPDATE FP_PROGRES
-                SET CANTIDAD_FP = ?, FASE_PODUCC = ?, PLANTA = ?, COMENTARIES = ?
-                WHERE FP_ID = ?
-                """
-                cursor.execute(update_query, (cantidad_fp,
-                               fase_producc, planta, comentarios, fp_id))
-                conn.commit()
+                    select_query = """
+                        SELECT FASE_PODUCC
+                        FROM FP_PROGRES
+                        WHERE FP_ID = ?
+                    """
+                    cursor.execute(select_query, (fp_id,))
+                    existing_data = cursor.fetchone()
+                    if existing_data:
+                        prev_fase = existing_data[0]
+                    else:
+                        prev_fase = None
 
-                # Update the corresponding phase start and end times in FP_TIMES table with current datetime
-                update_times_query = f"""
-                UPDATE FP_TIMES
-                SET {fase_producc}_ST = CASE WHEN {fase_producc}_ST IS NULL THEN ? ELSE {fase_producc}_ST END,
-                    {prev_fase}_ET = CASE WHEN {prev_fase}_ST IS NOT NULL THEN ? ELSE {prev_fase}_ET END
-                WHERE FP_ID = ?
-                """
-                current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                cursor.execute(update_times_query,
-                               (current_datetime, current_datetime, fp_id))
-                conn.commit()
+                    update_query = """
+                        UPDATE FP_PROGRES
+                        SET CANTIDAD_FP = ?, FASE_PODUCC = ?, PLANTA = ?, COMENTARIES = ?
+                        WHERE FP_ID = ?
+                    """
+                    params = (cantidad_fp, fase_producc,
+                              planta, comentarios, fp_id)
+                    cursor.execute(update_query, params)
+                    conn.commit()
 
-                cursor.close()
-                conn.close()
+                    # Update the corresponding phase start and end times in FP_TIMES table with current datetime
+                    update_times_query = f"""
+                        UPDATE FP_TIMES
+                        SET {fase_producc}_ST = CASE WHEN {fase_producc}_ST IS NULL THEN ? ELSE {fase_producc}_ST END,
+                            {prev_fase}_ET = CASE WHEN {prev_fase}_ST IS NOT NULL THEN ? ELSE {prev_fase}_ET END
+                        WHERE FP_ID = ?
+                    """
+                    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    cursor.execute(update_times_query,
+                                   (current_datetime, current_datetime, fp_id))
+                    conn.commit()
 
-                edit_window.destroy()
-                self.reload_data()
+                except pyodbc.Error as e:
+                    logging.error(
+                        f"An error occurred while updating child record: {str(e)}")
+                    messagebox.showerror(
+                        "Error", "An error occurred while updating the child record. Please check the logs for more information.")
+                finally:
+                    # Close the database connection and cursor
+                    if cursor:
+                        cursor.close()
+                    if conn:
+                        conn.close()
+            edit_window.destroy()
+            self.reload_data()
 
             save_button = ctk.CTkButton(
                 edit_window, text="Guardar Cambios", command=save_edited_child_record)
@@ -366,6 +412,14 @@ class MyFrame(ctk.CTkFrame):
 
         # Load updated data from the database
         self.load_data()
+
+
+def sanitize_input(value):
+    # Implement input sanitization logic here
+    # Example: Remove any HTML tags or special characters
+    sanitized_value = value.strip()
+    # Add more sanitization steps as needed
+    return sanitized_value
 
 
 class App(ctk.CTk):
