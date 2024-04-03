@@ -4,6 +4,7 @@ from tkinter import ttk
 import customtkinter as ctk
 import pyodbc
 from tksheet import Sheet
+from datetime import datetime
 
 
 class ScrollableFrame(ctk.CTkScrollableFrame):
@@ -21,7 +22,6 @@ class MyFrame(ctk.CTkFrame):
 
         # fases_produccion
         self.fases = [
-            "",
             "Dispenciacion",
             "Pesaje",
             "Fabricacion",
@@ -32,7 +32,7 @@ class MyFrame(ctk.CTkFrame):
             "Despacho"
         ]
         # plantas de produccion
-        self.plantas = ["", "01", "02"]
+        self.plantas = ["01", "02"]
 
         # Configure column headers
         headers = [
@@ -224,6 +224,19 @@ class MyFrame(ctk.CTkFrame):
                                fase_producc, planta, comentarios))
                 conn.commit()
 
+                # Get the last inserted FP_ID
+                cursor.execute("SELECT @@IDENTITY")
+                fp_id = cursor.fetchone()[0]
+
+                # Insert data into FP_TIMES table for the corresponding phase with current datetime
+                insert_times_query = f"""
+                INSERT INTO FP_TIMES (FP_ID, {fase_producc}_ST)
+                VALUES (?, ?)
+                """
+                current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                cursor.execute(insert_times_query, (fp_id, current_datetime))
+                conn.commit()
+
                 cursor.close()
                 conn.close()
 
@@ -300,6 +313,19 @@ class MyFrame(ctk.CTkFrame):
                 conn = pyodbc.connect(conn_str)
                 cursor = conn.cursor()
 
+                select_query = """
+                SELECT FASE_PODUCC
+                FROM FP_PROGRES
+                WHERE FP_ID = ?
+                """
+                cursor.execute(select_query, (fp_id,))
+                existing_data = cursor.fetchone()
+                if existing_data:
+                    prev_fase = existing_data[0]
+                else:
+                    prev_fase = None
+
+                # Update the child record in the database
                 update_query = """
                 UPDATE FP_PROGRES
                 SET CANTIDAD_FP = ?, FASE_PODUCC = ?, PLANTA = ?, COMENTARIES = ?
@@ -307,6 +333,18 @@ class MyFrame(ctk.CTkFrame):
                 """
                 cursor.execute(update_query, (cantidad_fp,
                                fase_producc, planta, comentarios, fp_id))
+                conn.commit()
+
+                # Update the corresponding phase start and end times in FP_TIMES table with current datetime
+                update_times_query = f"""
+                UPDATE FP_TIMES
+                SET {fase_producc}_ST = CASE WHEN {fase_producc}_ST IS NULL THEN ? ELSE {fase_producc}_ST END,
+                    {prev_fase}_ET = CASE WHEN {prev_fase}_ST IS NOT NULL THEN ? ELSE {prev_fase}_ET END
+                WHERE FP_ID = ?
+                """
+                current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                cursor.execute(update_times_query,
+                               (current_datetime, current_datetime, fp_id))
                 conn.commit()
 
                 cursor.close()
