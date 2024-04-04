@@ -148,7 +148,7 @@ class MyFrame(ctk.CTkFrame):
             self.sheet.set_sheet_data(formatted_data)
             # Configure column widths
             self.column_widths = [100, 120, 240, 120, 120,
-                                  120, 80, 100, 100, 50, 120, 100, 80, 200]
+                                  120, 80, 100, 100, 50, 150, 120, 80, 200]
 
             for i, width in enumerate(self.column_widths):
                 self.sheet.column_width(column=i, width=width)
