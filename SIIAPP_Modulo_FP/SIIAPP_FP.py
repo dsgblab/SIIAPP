@@ -45,13 +45,15 @@ class MyFrame(ctk.CTkFrame):
             "Codigo Producto",
             "Nombre del Producto",
             "Fecha Requerida",
+            "Fecha Entrega Planta",
+            "Fecha Estimado Fin",
             "Cantidad Pedida",
             "Estado Pedido",
             "OP",
             "Estado OP",
             "Item Compañia",
             "FP_ID",
-            "Cantidad en fase de produccion",
+            "Cantidad en FP",
             "Fase de Produccion",
             "Planta",
             "Observaciones/Comentarios"
@@ -98,31 +100,34 @@ class MyFrame(ctk.CTkFrame):
 
             # Fetch data from the database using parameterized query
             query = """
-                SELECT 
-                    V_fp_pedidos.Pedido, 
-                    V_fp_pedidos.[Codigo Producto], 
+                SELECT
+                    V_fp_pedidos.Pedido,
+                    V_fp_pedidos.[Codigo Producto],
                     in_items.itedesclarg AS NomProducto,
-                    V_fp_pedidos.[Fecha Requerida], 
-                    V_fp_pedidos.[Cantidad Pedida], 
+                    V_fp_pedidos.[Fecha Requerida],
+                    V_fp_pedidos.[Fecha Entrega Planta],
+                    V_fp_pedidos.[Fecha Esti Fin],
+                    V_fp_pedidos.[Cantidad Pedida],
                     V_fp_pedidos.[Estado Pedido],
-                    V_fp_pedidos.OP, 
-                    V_fp_pedidos.eobnombre AS [Estado OP], 
+                    V_fp_pedidos.OP,
+                    V_fp_pedidos.eobnombre AS [Estado OP],
                     in_items.itecompania,
-                    FP_PROGRES.FP_ID, 
-                    FP_PROGRES.CANTIDAD_FP, 
-                    FP_PROGRES.FASE_PODUCC, 
-                    FP_PROGRES.PLANTA, 
+                    FP_PROGRES.FP_ID,
+                    FP_PROGRES.CANTIDAD_FP,
+                    FP_PROGRES.FASE_PODUCC,
+                    FP_PROGRES.PLANTA,
                     FP_PROGRES.COMENTARIES
-                FROM 
+                FROM
                     [ssf_genericos].[dbo].[V_fp_pedidos]
-                INNER JOIN 
+                INNER JOIN
                     [ssf_genericos].[dbo].[in_items] ON V_fp_pedidos.[Codigo Producto] = in_items.itecodigo
-                LEFT JOIN 
-                    [SIIAPP].[dbo].[FP_PROGRES] AS FP_PROGRES 
+                LEFT JOIN
+                    [SIIAPP].[dbo].[FP_PROGRES] AS FP_PROGRES
                     ON V_fp_pedidos.OP = FP_PROGRES.orpconsecutivo COLLATE Latin1_General_CI_AS
-                WHERE 
+                WHERE
                     (V_fp_pedidos.eobnombre IN (?, ?, ?))
-                    AND (in_items.itecompania = ?);
+                AND 
+                    (in_items.itecompania = ?);
             """
             params = ('Por ejecutar', 'En ejecucion', 'En firme', '01')
             cursor.execute(query, params)
@@ -132,8 +137,8 @@ class MyFrame(ctk.CTkFrame):
             formatted_data = []
             for row in data:
                 parent_row = [
-                    str(value) if value is not None else "" for value in row[:9]]
-                fp_progres_values = row[9:]
+                    str(value) if value is not None else "" for value in row[:10]]
+                fp_progres_values = row[10:]
 
                 if any(fp_progres_values):
                     parent_row.extend(
@@ -147,14 +152,14 @@ class MyFrame(ctk.CTkFrame):
             self.original_data = formatted_data
             self.sheet.set_sheet_data(formatted_data)
             # Configure column widths
-            self.column_widths = [100, 120, 240, 120, 120,
-                                  120, 80, 100, 100, 50, 150, 120, 80, 200]
+            self.column_widths = [100, 120, 440, 140, 140, 140, 120,
+                                  120, 80, 100, 100, 80, 150, 120, 80, 200]
 
             for i, width in enumerate(self.column_widths):
                 self.sheet.column_width(column=i, width=width)
 
             # Highlight FP_PROGRES columns
-            for i in range(9, 14):
+            for i in range(11, 16):
                 self.sheet.highlight_columns(
                     columns=[i], bg="lightgray", fg="black")
 
@@ -173,7 +178,7 @@ class MyFrame(ctk.CTkFrame):
         op_filter = self.filter_entry.get()
         if op_filter:
             filtered_data = [
-                row for row in self.original_data if op_filter in row[6]]
+                row for row in self.original_data if op_filter in row[8]]
             self.sheet.set_sheet_data(filtered_data)
         else:
             self.sheet.set_sheet_data(self.original_data)
@@ -184,8 +189,8 @@ class MyFrame(ctk.CTkFrame):
             # Get the first selected row
             selected_row = next(iter(selected_rows))
             row_data = self.sheet.get_row_data(selected_row)
-            op_value = row_data[6]  # Assuming 'OP' is at index 6
-            it_comp = row_data[8]  # Assuming
+            op_value = row_data[8]  # Assuming 'OP' is at index 6
+            it_comp = row_data[10]  # Assuming
 
             # Create a new window for entering child record data
             child_window = ctk.CTkToplevel(self)
@@ -291,8 +296,8 @@ class MyFrame(ctk.CTkFrame):
             # Get the first selected row
             selected_row = next(iter(selected_rows))
             row_data = self.sheet.get_row_data(selected_row)
-            op_value = row_data[6]  # Assuming 'OP' is at index 6
-            fp_id = row_data[9]  # Assuming 'FP_ID' is at index 9
+            op_value = row_data[8]  # Assuming 'OP' is at index 8
+            fp_id = row_data[11]  # Assuming 'FP_ID' is at index 11
 
             # Create a new window for editing child record data
             edit_window = ctk.CTkToplevel(self)
@@ -302,19 +307,19 @@ class MyFrame(ctk.CTkFrame):
             cantidad_fp_entry = ctk.CTkEntry(
                 edit_window, placeholder_text="Cantidad en fase de produccion")
             # Pre-fill with existing data
-            cantidad_fp_entry.insert(0, row_data[10])
+            cantidad_fp_entry.insert(0, row_data[12])
             fase_producc_entry = ctk.CTkComboBox(
                 edit_window, values=self.fases, state="readonly")
             # Pre-fill with existing data
-            fase_producc_entry.set(row_data[11])
+            fase_producc_entry.set(row_data[13])
             planta_entry = ctk.CTkComboBox(
                 edit_window,  values=self.plantas, state="readonly")
-            planta_entry.set(row_data[12])
+            planta_entry.set(row_data[14])
             # Pre-fill with existing data
             comentarios_entry = ctk.CTkTextbox(
                 edit_window, height=50, width=200)
             # Pre-fill with existing data
-            comentarios_entry.insert("0.0", row_data[13])
+            comentarios_entry.insert("0.0", row_data[15])
             comentarios_entry.configure(
                 border_color='blue', border_width=0.5)
             # Grid view
@@ -429,7 +434,7 @@ def sanitize_input(value):
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("800x400")
+        self.geometry("1000x600")
         self.grid_rowconfigure(0, weight=1)  # configure grid system
         self.grid_columnconfigure(0, weight=1)
 
