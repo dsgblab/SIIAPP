@@ -27,7 +27,7 @@ class MyFrame(ctk.CTkFrame):
 
         # fases_produccion
         self.fases = [
-            "Dispenciacion",
+            "Dispensacion",
             "Pesaje",
             "Fabricacion",
             "Microbiologia",
