@@ -94,7 +94,7 @@ class MyFrame(ctk.CTkFrame):
     def load_data(self):
         try:
             # Connect to the database
-            conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=ssf_genericos;UID=sa;PWD=Genericos0224*'
+            conn_str = 'DRIVER={SQL Server};SERVER=10.10.10.251\\softland;DATABASE=ssf_genericos;UID=SIIAPP;PWD=1Qaz2wsx*'
             conn = pyodbc.connect(conn_str)
             cursor = conn.cursor()
 
@@ -152,8 +152,8 @@ class MyFrame(ctk.CTkFrame):
             self.original_data = formatted_data
             self.sheet.set_sheet_data(formatted_data)
             # Configure column widths
-            self.column_widths = [100, 120, 440, 140, 140, 140, 120,
-                                  120, 80, 100, 100, 80, 150, 120, 80, 200]
+            self.column_widths = [120, 120, 500, 140, 140, 140, 120,
+                                  120, 120, 120, 120, 120, 160, 200, 120, 240]
 
             for i, width in enumerate(self.column_widths):
                 self.sheet.column_width(column=i, width=width)
@@ -241,7 +241,7 @@ class MyFrame(ctk.CTkFrame):
                     comentarios = sanitize_input(comentarios)
 
                     # Insert the child record into the database using parameterized query
-                    conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
+                    conn_str = 'DRIVER={SQL Server};SERVER=10.10.10.251\\softland;DATABASE=SIIAPP;UID=SIIAPP;PWD=1Qaz2wsx*'
                     conn = pyodbc.connect(conn_str)
                     cursor = conn.cursor()
 
@@ -356,7 +356,7 @@ class MyFrame(ctk.CTkFrame):
                     comentarios = sanitize_input(comentarios)
 
                     # Update the child record in the database using parameterized query
-                    conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=sa;PWD=Genericos0224*'
+                    conn_str = 'DRIVER={SQL Server};SERVER=10.10.10.251\\softland;DATABASE=SIIAPP;UID=SIIAPP;PWD=1Qaz2wsx*'
                     conn = pyodbc.connect(conn_str)
                     cursor = conn.cursor()
 
