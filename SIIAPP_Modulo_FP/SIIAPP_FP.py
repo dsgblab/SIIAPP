@@ -153,7 +153,7 @@ class MyFrame(ctk.CTkFrame):
             self.sheet.set_sheet_data(formatted_data)
             # Configure column widths
             self.column_widths = [120, 120, 500, 140, 140, 140, 120,
-                                  120, 120, 120, 120, 120, 160, 200, 120, 240]
+                                  120, 120, 120, 120, 120, 160, 200, 120, 600]
 
             for i, width in enumerate(self.column_widths):
                 self.sheet.column_width(column=i, width=width)
@@ -175,13 +175,19 @@ class MyFrame(ctk.CTkFrame):
                 conn.close()
 
     def filter_data(self, event):
+        self.column_widths = [120, 120, 500, 140, 140, 140, 120,
+                              120, 120, 120, 120, 120, 160, 200, 120, 600]
         op_filter = self.filter_entry.get()
         if op_filter:
             filtered_data = [
                 row for row in self.original_data if op_filter in row[8]]
             self.sheet.set_sheet_data(filtered_data)
+            for i, width in enumerate(self.column_widths):
+                self.sheet.column_width(column=i, width=width)
         else:
             self.sheet.set_sheet_data(self.original_data)
+            for i, width in enumerate(self.column_widths):
+                self.sheet.column_width(column=i, width=width)
 
     def create_child_record(self):
         selected_rows = self.sheet.get_selected_rows()
