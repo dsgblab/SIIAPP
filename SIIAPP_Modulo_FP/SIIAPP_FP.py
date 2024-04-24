@@ -94,7 +94,7 @@ class MyFrame(ctk.CTkFrame):
     def load_data(self):
         try:
             # Connect to the database
-            conn_str = 'DRIVER={SQL Server};SERVER=10.10.10.251\\softland;DATABASE=ssf_genericos;UID=SIIAPP;PWD=1Qaz2wsx*'
+            conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=ssf_genericos;UID=test;PWD=test'
             conn = pyodbc.connect(conn_str)
             cursor = conn.cursor()
 
@@ -247,7 +247,7 @@ class MyFrame(ctk.CTkFrame):
                     comentarios = sanitize_input(comentarios)
 
                     # Insert the child record into the database using parameterized query
-                    conn_str = 'DRIVER={SQL Server};SERVER=10.10.10.251\\softland;DATABASE=SIIAPP;UID=SIIAPP;PWD=1Qaz2wsx*'
+                    conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=test;PWD=test'
                     conn = pyodbc.connect(conn_str)
                     cursor = conn.cursor()
 
@@ -362,7 +362,7 @@ class MyFrame(ctk.CTkFrame):
                     comentarios = sanitize_input(comentarios)
 
                     # Update the child record in the database using parameterized query
-                    conn_str = 'DRIVER={SQL Server};SERVER=10.10.10.251\\softland;DATABASE=SIIAPP;UID=SIIAPP;PWD=1Qaz2wsx*'
+                    conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=test;PWD=test'
                     conn = pyodbc.connect(conn_str)
                     cursor = conn.cursor()
 
