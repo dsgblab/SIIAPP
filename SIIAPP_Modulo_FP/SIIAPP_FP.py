@@ -234,17 +234,24 @@ class MyFrame(ctk.CTkFrame):
             comentarios_entry.grid(row=3, column=1, padx=5, pady=5)
 
             def save_child_record():
-                try:
-                    cantidad_fp = cantidad_fp_entry.get()
-                    fase_producc = fase_producc_entry.get()
-                    planta = planta_entry.get()
-                    comentarios = comentarios_entry.get("0.0", "end")
+                cantidad_fp = cantidad_fp_entry.get()
+                fase_producc = fase_producc_entry.get()
+                planta = planta_entry.get()
+                comentarios = comentarios_entry.get("0.0", "end")
+                if not all([cantidad_fp, fase_producc, planta]):
+                    messagebox.showerror(
+                        "Error", "Por favor llene todos los campos antes de guardar el registro.")
+                    return child_window.destroy()
 
-                    # Validate and sanitize user input
-                    cantidad_fp = sanitize_input(cantidad_fp)
-                    fase_producc = sanitize_input(fase_producc)
-                    planta = sanitize_input(planta)
-                    comentarios = sanitize_input(comentarios)
+                # Validate and sanitize user input
+                cantidad_fp = sanitize_input(cantidad_fp)
+                fase_producc = sanitize_input(fase_producc)
+                planta = sanitize_input(planta)
+                comentarios = sanitize_input(comentarios)
+
+                # Define cursor variable outside try block
+                cursor = None
+                try:
 
                     # Insert the child record into the database using parameterized query
                     conn_str = 'DRIVER={SQL Server};SERVER=EQ040;DATABASE=SIIAPP;UID=test;PWD=test'
