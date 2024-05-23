@@ -165,20 +165,18 @@ class MyFrame(ctk.CTkScrollableFrame):
                 # Disable the "Traer Datos" button
                 self.fetch_button.configure(state=ctk.DISABLED)
                 for i, custom_label in enumerate(['Fecha solicitud']):
-                    select_date_button = ctk.CTkButton(self, text=f'Elegir fecha para {
-                                                       custom_label}', command=lambda label=custom_label: self.select_date(label))
+                    select_date_button = ctk.CTkButton(self, text=f'Elegir fecha para {custom_label}', command=lambda label=custom_label: self.select_date(label))
+
                     select_date_button.grid(
                         row=i+1, column=2, padx=5, pady=5, sticky=ctk.W)
                     self.select_date_buttons.append(select_date_button)
                 for i, custom_label in enumerate(['Fecha de entrega muestra por parte de proveedores a desarrollo']):
-                    select_date_button = ctk.CTkButton(self, text=f'Elegir fecha para {
-                                                       custom_label}', command=lambda label=custom_label: self.select_date(label))
+                    select_date_button = ctk.CTkButton(self, text=f'Elegir fecha para {custom_label}', command=lambda label=custom_label: self.select_date(label))
                     select_date_button.grid(
                         row=10, column=2, padx=5, pady=5, sticky=ctk.W)
                     self.select_date_buttons.append(select_date_button)
                 for i, custom_label in enumerate(['Fecha de respuesta desarrollo']):
-                    select_date_button = ctk.CTkButton(self, text=f'Elegir fecha para {
-                                                       custom_label}', command=lambda label=custom_label: self.select_date(label))
+                    select_date_button = ctk.CTkButton(self, text=f'Elegir fecha para {custom_label}', command=lambda label=custom_label: self.select_date(label))
                     select_date_button.grid(
                         row=11, column=2, padx=5, pady=5, sticky=ctk.W)
                     self.select_date_buttons.append(select_date_button)
