@@ -26,6 +26,9 @@ class MyFrame(ctk.CTkFrame):
         self.sheet = Sheet(self)
         self.sheet.pack(fill="both", expand=True)
 
+        #FASES SEGUIMIENTO 0C
+        self.fases = ["Cartera","Homologacion","Cotizacion","Diseño"]
+        
         # Configure column headers
         headers = [
             "UID",
@@ -196,7 +199,7 @@ class MyFrame(ctk.CTkFrame):
             child_window.title("Crear Registro de Seguimiento")
 
             # Add input fields for child record data
-            ocfstate_entry = ctk.CTkEntry(child_window, placeholder_text="Estado de Seguimiento")
+            ocfstate_entry = ctk.CTkComboBox(child_window, values=self.fases, state="readonly")
             comments_entry = ctk.CTkTextbox(child_window, height=50, width=200)
             comments_entry.configure(border_color='blue', border_width=0.5)
 
@@ -267,8 +270,8 @@ class MyFrame(ctk.CTkFrame):
             edit_window.title("Editar Registro de Seguimiento")
 
             # Add input fields for child record data
-            ocfstate_entry = ctk.CTkEntry(edit_window, placeholder_text="Estado de Seguimiento")
-            ocfstate_entry.insert(0, row_data[11])  # Pre-fill with existing data
+            ocfstate_entry = ctk.CTkComboBox(edit_window, values=self.fases, state="readonly")
+            ocfstate_entry.set(row_data[11])  # Pre-fill with existing data
             comments_entry = ctk.CTkTextbox(edit_window, height=50, width=200)
             comments_entry.insert("0.0", row_data[12])  # Pre-fill with existing data
             comments_entry.configure(border_color='blue', border_width=0.5)
@@ -343,9 +346,9 @@ ALLOWED_USERS = os.getenv('ALLOWED_USERS')
 class LoginFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        self.username_entry = ctk.CTkEntry(self, placeholder_text="Username")
+        self.username_entry = ctk.CTkEntry(self, placeholder_text="Nombre de usuario")
         self.username_entry.pack(pady=10)
-        self.password_entry = ctk.CTkEntry(self, placeholder_text="Password", show="*")
+        self.password_entry = ctk.CTkEntry(self, placeholder_text="Contraseña", show="*")
         self.password_entry.pack(pady=10)
         self.login_button = ctk.CTkButton(self, text="Login", command=self.authenticate)
         self.login_button.pack(pady=10)
@@ -355,10 +358,10 @@ class LoginFrame(ctk.CTkFrame):
         password = self.password_entry.get()
 
         if authenticate_user(username, password):
-            messagebox.showinfo("Login Successful", "Welcome!")
+            messagebox.showinfo("Login Exitoso", "Bienvenido!")
             self.master.show_app_frame()
         else:
-            messagebox.showerror("Login Failed", "Invalid credentials or access denied.")
+            messagebox.showerror("Login Fallido", "Credenciales invalidas o acceso denegado.")
 
 def authenticate_user(username, password):
     server = Server(os.getenv('AD_SERVER'), get_info=ALL)

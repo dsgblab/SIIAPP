@@ -1,1 +1,8 @@
 INFO:root:LDAP bind successful for ds.
+INFO:root:LDAP bind successful for ds.
+ERROR:root:LDAP error for ds: NTLM needs domain\username and a password
+WARNING:root:Access denied for ds.
+INFO:root:LDAP bind successful for ds.
+ERROR:root:LDAP error for jramos: automatic bind not successful - invalidCredentials
+WARNING:root:Access denied for jramos.
+INFO:root:LDAP bind successful for ds.
