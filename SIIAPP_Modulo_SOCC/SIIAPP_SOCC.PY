@@ -13,86 +13,22 @@ logging.basicConfig(filename='auth.log', level=logging.INFO)
 
 # Load environment variables from .env file
 load_dotenv()
+
 class MyTabView(ctk.CTkTabview):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        
         
         # Create tabs
         self.add("Seguimiento OC")
         self.add("Seguimiento sin OC")
         
         # Add widgets to tabs
-        self.my_frame1 = MyFrame(master=self.tab("Seguimiento OC"))
+        self.my_frame1 = MyFrame(master=self.tab("Seguimiento OC"), load_data_func=self.load_data_oc)
         self.my_frame1.pack(fill="both", expand=True)
-        self.my_frame2 = MyFrame(master=self.tab("Seguimiento sin OC"))
+        self.my_frame2 = MyFrame(master=self.tab("Seguimiento sin OC"), load_data_func=self.load_data_noc)
         self.my_frame2.pack(fill="both", expand=True)
-class ScrollableFrame(ctk.CTkScrollableFrame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-
-class MyFrame(ctk.CTkFrame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-
-        # Create Tksheet widget
-        self.sheet = Sheet(self)
-        self.sheet.pack(fill="both", expand=True)
-
-        #FASES SEGUIMIENTO 0C
-        self.fases = ["Cartera","Homologacion","Cotizacion","Diseño","Otro"]
         
-        # Configure column headers
-        headers = [
-            "UID",
-            "# OC/OP",
-            "CODIGO ITEM",
-            "DESCRIPCION ITEM",
-            "NIT PROVEEDOR",
-            "DESCRIPCION PROVEEDOR",
-            "UNIDADES PEDIDAS",
-            "VALOR NETO",
-            "FECHA COMPROMETIDA",
-            "FECHA REQUERIDA",
-            "ESTADO OC",
-            "ESTADO SEGUIMIENTO",
-            "COMENTARIOS"
-        ]
-        self.sheet.headers(headers)
-
-        # Enable row selection
-        self.sheet.enable_bindings(("single_select", "row_select","arrowkeys"))
-
-        # Create a scrollable frame
-        self.scrollable_frame = ScrollableFrame(self)
-        self.scrollable_frame.pack(fill="both", expand=True)
-
-        # Create filter entry
-        self.filter_entry = ctk.CTkEntry(
-            self.scrollable_frame, placeholder_text="Buscar por # OC, CODIGO ITEM, ITEM, NIT, PROVEEDOR")
-        self.filter_entry.pack(padx=10, pady=10, fill="x")
-        self.filter_entry.bind("<Return>", self.filter_data)
-
-        # Create buttons
-        self.button_frame = ctk.CTkFrame(self.scrollable_frame)
-        self.button_frame.pack(padx=10, pady=10, fill="x")
-
-        self.create_child_button = ctk.CTkButton(
-            self.button_frame, text="Crear Registro", command=self.create_child_record)
-        self.create_child_button.pack(side="left", padx=5)
-
-        self.edit_child_button = ctk.CTkButton(
-            self.button_frame, text="Editar Registro", command=self.edit_child_record)
-        self.edit_child_button.pack(side="left", padx=5)
-
-        self.hot_reload_button = ctk.CTkButton(
-            self.button_frame, text="Refrescar", command=self.reload_data)
-        self.hot_reload_button.pack(side="left", padx=5)
-
-        # Load data from the database
-        self.load_data()
-
-    def load_data(self):
+    def load_data_oc(self, frame):
         try:
             # Connect to the database
             conn_str = (
@@ -124,9 +60,49 @@ class MyFrame(ctk.CTkFrame):
                 FROM dbo.vw_in_ordeabasdeta_with_uid
                 LEFT OUTER JOIN dbo.CON_SEG_OC
                     ON vw_in_ordeabasdeta_with_uid.UID = CON_SEG_OC.UID COLLATE Latin1_General_CI_AS
+            """
+            cursor.execute(query)
+            data = cursor.fetchall()
 
-                UNION
+            # Insert data into the Tksheet
+            formatted_data = [
+                [str(value) if value is not None else "" for value in row]
+                for row in data
+            ]
 
+            frame.original_data = formatted_data
+            frame.sheet.set_sheet_data(formatted_data)
+
+            # Configure column widths
+            frame.column_widths = [0, 140, 120, 500, 120, 500, 120, 120, 140, 140, 120, 160, 600]
+
+            for i, width in enumerate(frame.column_widths):
+                frame.sheet.column_width(column=i, width=width)
+
+        except pyodbc.Error as e:
+            print(f"An error occurred while loading data: {str(e)}", file=sys.stderr)
+        finally:
+            # Close the database connection and cursor
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+    def load_data_noc(self, frame):
+        try:
+            # Connect to the database
+            conn_str = (
+                f"DRIVER={os.getenv('DB1_DRIVER')};"
+                f"SERVER={os.getenv('DB1_SERVER')};"
+                f"DATABASE={os.getenv('DB1_DATABASE')};"
+                f"UID={os.getenv('DB1_UID')};"
+                f"PWD={os.getenv('DB1_PWD')}"
+            )
+            conn = pyodbc.connect(conn_str)
+            cursor = conn.cursor()
+
+            # Fetch data from the database using parameterized query
+            query = """
                 SELECT
                     CONCAT(vw_Negativos.OP,vw_Negativos.item) AS UID,
                     vw_Negativos.OP AS [# OC],
@@ -160,14 +136,14 @@ class MyFrame(ctk.CTkFrame):
                 for row in data
             ]
 
-            self.original_data = formatted_data
-            self.sheet.set_sheet_data(formatted_data)
+            frame.original_data = formatted_data
+            frame.sheet.set_sheet_data(formatted_data)
 
             # Configure column widths
-            self.column_widths = [0, 140, 120, 500, 120, 500, 120, 120, 140, 140, 120, 160, 600]
+            frame.column_widths = [0, 140, 120, 500, 120, 500, 120, 120, 140, 140, 120, 160, 600]
 
-            for i, width in enumerate(self.column_widths):
-                self.sheet.column_width(column=i, width=width)
+            for i, width in enumerate(frame.column_widths):
+                frame.sheet.column_width(column=i, width=width)
 
         except pyodbc.Error as e:
             print(f"An error occurred while loading data: {str(e)}", file=sys.stderr)
@@ -177,6 +153,74 @@ class MyFrame(ctk.CTkFrame):
                 cursor.close()
             if conn:
                 conn.close()
+
+class ScrollableFrame(ctk.CTkScrollableFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+
+class MyFrame(ctk.CTkFrame):
+    def __init__(self, master, load_data_func, **kwargs):
+        super().__init__(master, **kwargs)
+        self.load_data_func = load_data_func
+
+        # Create Tksheet widget
+        self.sheet = Sheet(self)
+        self.sheet.pack(fill="both", expand=True)
+
+        #FASES SEGUIMIENTO 0C
+        self.fases = ["Cartera", "Homologacion", "Cotizacion", "Diseño", "Otro"]
+        
+        # Configure column headers
+        headers = [
+            "UID",
+            "# OC/OP",
+            "CODIGO ITEM",
+            "DESCRIPCION ITEM",
+            "NIT PROVEEDOR",
+            "DESCRIPCION PROVEEDOR",
+            "UNIDADES PEDIDAS",
+            "VALOR NETO",
+            "FECHA COMPROMETIDA",
+            "FECHA REQUERIDA",
+            "ESTADO OC",
+            "ESTADO SEGUIMIENTO",
+            "COMENTARIOS"
+        ]
+        self.sheet.headers(headers)
+
+        # Enable row selection
+        self.sheet.enable_bindings(("single_select", "row_select", "arrowkeys"))
+
+        # Create a scrollable frame
+        self.scrollable_frame = ScrollableFrame(self)
+        self.scrollable_frame.pack(fill="both", expand=True)
+
+        # Create filter entry
+        self.filter_entry = ctk.CTkEntry(
+            self.scrollable_frame, placeholder_text="Buscar por # OC, CODIGO ITEM, ITEM, NIT, PROVEEDOR")
+        self.filter_entry.pack(padx=10, pady=10, fill="x")
+        self.filter_entry.bind("<Return>", self.filter_data)
+
+        # Create buttons
+        self.button_frame = ctk.CTkFrame(self.scrollable_frame)
+        self.button_frame.pack(padx=10, pady=10, fill="x")
+
+        self.create_child_button = ctk.CTkButton(
+            self.button_frame, text="Crear Registro", command=self.create_child_record)
+        self.create_child_button.pack(side="left", padx=5)
+
+        self.edit_child_button = ctk.CTkButton(
+            self.button_frame, text="Editar Registro", command=self.edit_child_record)
+        self.edit_child_button.pack(side="left", padx=5)
+
+        self.hot_reload_button = ctk.CTkButton(
+            self.button_frame, text="Refrescar", command=self.reload_data)
+        self.hot_reload_button.pack(side="left", padx=5)
+
+        self.load_data()
+
+    def load_data(self):
+        self.load_data_func(self)
 
     def filter_data(self, event):
         self.column_widths = [0, 140, 120, 500, 120, 500, 120, 120, 140, 140, 120, 160, 600]
@@ -197,6 +241,7 @@ class MyFrame(ctk.CTkFrame):
             self.sheet.set_sheet_data(self.original_data)
             for i, width in enumerate(self.column_widths):
                 self.sheet.column_width(column=i, width=width)
+
     def create_child_record(self):
         selected_rows = self.sheet.get_selected_rows()
         if selected_rows:
@@ -231,7 +276,7 @@ class MyFrame(ctk.CTkFrame):
                     cursor.close()
                 if conn:
                     conn.close()
-                    
+
             # Create a new window for entering child record data
             child_window = ctk.CTkToplevel(self)
             child_window.title("Crear Registro de Seguimiento")
@@ -295,6 +340,7 @@ class MyFrame(ctk.CTkFrame):
             save_button.grid(row=2, column=0, columnspan=2, pady=10)
         else:
             messagebox.showinfo("Sin seleccion", "Porfavor eliga una fila para Crear un registro")
+
     def edit_child_record(self):
         selected_rows = self.sheet.get_selected_rows()
         if selected_rows:
@@ -364,7 +410,6 @@ class MyFrame(ctk.CTkFrame):
             save_button.grid(row=2, column=0, columnspan=2, pady=10)
         else:
             messagebox.showinfo("Sin seleccion", "Porfavor eliga una fila para editar un registro")
-
 
     def reload_data(self):
         # Clear existing data
