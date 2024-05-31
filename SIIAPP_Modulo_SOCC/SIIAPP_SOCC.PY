@@ -13,7 +13,20 @@ logging.basicConfig(filename='auth.log', level=logging.INFO)
 
 # Load environment variables from .env file
 load_dotenv()
-
+class MyTabView(ctk.CTkTabview):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+        
+        
+        # Create tabs
+        self.add("Seguimiento OC")
+        self.add("Seguimiento sin OC")
+        
+        # Add widgets to tabs
+        self.my_frame1 = MyFrame(master=self.tab("Seguimiento OC"))
+        self.my_frame1.pack(fill="both", expand=True)
+        self.my_frame2 = MyFrame(master=self.tab("Seguimiento sin OC"))
+        self.my_frame2.pack(fill="both", expand=True)
 class ScrollableFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -27,12 +40,12 @@ class MyFrame(ctk.CTkFrame):
         self.sheet.pack(fill="both", expand=True)
 
         #FASES SEGUIMIENTO 0C
-        self.fases = ["Cartera","Homologacion","Cotizacion","Diseño"]
+        self.fases = ["Cartera","Homologacion","Cotizacion","Diseño","Otro"]
         
         # Configure column headers
         headers = [
             "UID",
-            "# OC",
+            "# OC/OP",
             "CODIGO ITEM",
             "DESCRIPCION ITEM",
             "NIT PROVEEDOR",
@@ -95,23 +108,48 @@ class MyFrame(ctk.CTkFrame):
             # Fetch data from the database using parameterized query
             query = """
                 SELECT
-                   vw_in_ordeabasdeta_with_uid.UID
-                  ,vw_in_ordeabasdeta_with_uid.[# OC]
-                  ,vw_in_ordeabasdeta_with_uid.[CODIGO ITEM]
-                  ,vw_in_ordeabasdeta_with_uid.[DESCRIPCION ITEM]
-                  ,vw_in_ordeabasdeta_with_uid.[NIT PROVEEDOR]
-                  ,vw_in_ordeabasdeta_with_uid.[DESCRIPCION PROVEEDOR]
-                  ,vw_in_ordeabasdeta_with_uid.[UNIDADES PEDIDAS]
-                  ,vw_in_ordeabasdeta_with_uid.[VALOR NETO]
-                  ,vw_in_ordeabasdeta_with_uid.[FECHA COMPROMETIDA]
-                  ,vw_in_ordeabasdeta_with_uid.[FECHA REQUERIDA]
-                  ,vw_in_ordeabasdeta_with_uid.[ESTADO OC]
-                  ,CON_SEG_OC.OCFSTATE
-                  ,CON_SEG_OC.COMMENTS
-                  FROM dbo.vw_in_ordeabasdeta_with_uid
-                  LEFT OUTER JOIN dbo.CON_SEG_OC
+                    vw_in_ordeabasdeta_with_uid.UID,
+                    vw_in_ordeabasdeta_with_uid.[# OC],
+                    vw_in_ordeabasdeta_with_uid.[CODIGO ITEM],
+                    vw_in_ordeabasdeta_with_uid.[DESCRIPCION ITEM],
+                    vw_in_ordeabasdeta_with_uid.[NIT PROVEEDOR],
+                    vw_in_ordeabasdeta_with_uid.[DESCRIPCION PROVEEDOR],
+                    vw_in_ordeabasdeta_with_uid.[UNIDADES PEDIDAS],
+                    vw_in_ordeabasdeta_with_uid.[VALOR NETO],
+                    vw_in_ordeabasdeta_with_uid.[FECHA COMPROMETIDA],
+                    vw_in_ordeabasdeta_with_uid.[FECHA REQUERIDA],
+                    vw_in_ordeabasdeta_with_uid.[ESTADO OC],
+                    CON_SEG_OC.OCFSTATE,
+                    CON_SEG_OC.COMMENTS
+                FROM dbo.vw_in_ordeabasdeta_with_uid
+                LEFT OUTER JOIN dbo.CON_SEG_OC
                     ON vw_in_ordeabasdeta_with_uid.UID = CON_SEG_OC.UID COLLATE Latin1_General_CI_AS
-                  ORDER BY vw_in_ordeabasdeta_with_uid.[# OC]
+
+                UNION
+
+                SELECT
+                    CONCAT(vw_Negativos.OP,vw_Negativos.item) AS UID,
+                    vw_Negativos.OP AS [# OC],
+                    vw_Negativos.item AS [CODIGO ITEM],
+                    NULL AS [DESCRIPCION ITEM],
+                    NULL AS [NIT PROVEEDOR],
+                    NULL AS [DESCRIPCION PROVEEDOR],
+                    NULL AS [UNIDADES PEDIDAS],
+                    NULL AS [VALOR NETO],
+                    NULL AS [FECHA COMPROMETIDA],
+                    NULL AS [FECHA REQUERIDA],
+                    NULL AS [ESTADO OC],
+                    CON_SEG_OC.OCFSTATE,
+                    CON_SEG_OC.COMMENTS
+                FROM SIIAPP.dbo.vw_Negativos
+                LEFT OUTER JOIN SIIAPP.dbo.vw_in_ordeabasdeta_with_uid
+                    ON vw_Negativos.item = vw_in_ordeabasdeta_with_uid.[CODIGO ITEM]
+                LEFT OUTER JOIN dbo.CON_SEG_OC
+                    ON CONCAT(vw_Negativos.OP,vw_Negativos.item) = CON_SEG_OC.UID COLLATE Latin1_General_CI_AS
+                INNER JOIN ssf_genericos.dbo.V_fp_pedidos
+                    ON V_fp_pedidos.OP = vw_Negativos.OP
+                WHERE vw_in_ordeabasdeta_with_uid.[# OC] IS NULL
+                ORDER BY [# OC], [CODIGO ITEM];
             """
             cursor.execute(query)
             data = cursor.fetchall()
@@ -418,7 +456,7 @@ class App(ctk.CTk):
     def show_app_frame(self):
         self.login_frame.destroy()
         self.geometry("1000x600")
-        self.my_frame = MyFrame(master=self)
+        self.my_frame = MyTabView(master=self)
         self.my_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
 
 app = App()
